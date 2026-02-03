@@ -16,6 +16,7 @@
     "start": "tsx railway-start.js",
     "start:production": "node dist/production-start.js",
     "start:railway": "tsx railway-start.js",
+    "start:railway:fixed": "tsx railway-start-fixed.js",
     "check": "tsc --noEmit",
     "format": "prettier --write .",
     "test": "vitest run",
