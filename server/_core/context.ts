@@ -45,10 +45,8 @@ export async function createContext(
   let user: User | null = null;
 
   try {
+    // Only use standalone authentication - OAuth is disabled
     user = await authenticateStandaloneAdmin(opts.req);
-    if (!user) {
-      user = await sdk.authenticateRequest(opts.req);
-    }
   } catch (error) {
     // Authentication is optional for public procedures.
     user = null;

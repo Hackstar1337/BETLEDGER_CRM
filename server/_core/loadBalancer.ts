@@ -359,10 +359,10 @@ export class RealtimeSyncManager extends EventEmitter {
       this.handlePanelUpdate(data);
     });
 
-    // Periodic sync every 30 seconds
+    // Periodic sync every 5 minutes (reduced from 30 seconds to avoid spam)
     this.syncInterval = setInterval(() => {
       this.performPeriodicSync();
-    }, 30000);
+    }, 5 * 60 * 1000); // 5 minutes
   }
 
   private handlePanelUpdate(data: {
@@ -426,16 +426,24 @@ export class RealtimeSyncManager extends EventEmitter {
     }
   }
 
+  /**
+   * Perform periodic sync of all panels
+   */
   private async performPeriodicSync() {
     try {
-      // Get all panels with their current state
-      const db = await getDb();
-      if (!db) {
+      // Only sync if there are pending updates or it's been a while
+      const hasPendingUpdates = this.pendingUpdates.size > 0;
+      const timeSinceLastSync = this.lastSyncTime 
+        ? Date.now() - this.lastSyncTime.getTime()
+        : Infinity;
+
+      // Skip sync if no updates and recent sync (within 4 minutes)
+      if (!hasPendingUpdates && timeSinceLastSync < 4 * 60 * 1000) {
         return;
       }
-      const allPanels = await db.select().from(panels);
 
-      // Broadcast full sync
+      const allPanels = await this.loadBalancer.getAllPanels();
+      
       this.emit("fullSync", {
         type: "allPanels",
         data: allPanels,
@@ -451,7 +459,11 @@ export class RealtimeSyncManager extends EventEmitter {
       });
 
       this.lastSyncTime = new Date();
-      console.log("[SyncManager] Periodic sync completed");
+      
+      // Only log if there were actual updates
+      if (hasPendingUpdates || timeSinceLastSync > 10 * 60 * 1000) {
+        console.log("[SyncManager] Periodic sync completed");
+      }
     } catch (error) {
       console.error("[SyncManager] Periodic sync error:", error);
     }
