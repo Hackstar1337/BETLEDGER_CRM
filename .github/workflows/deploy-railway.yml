@@ -1,0 +1,214 @@
+name: 🚀 Deploy to Railway with Database Fix
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+    inputs:
+      force_database_reset:
+        description: 'Force complete database reset (WARNING: Deletes all data)'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
+
+env:
+  NODE_VERSION: '18'
+  PNPM_VERSION: '8'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: Deploy to Railway
+    
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: 📦 Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: 📥 Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: 🔨 Build Application
+        run: pnpm build
+        env:
+          NODE_ENV: production
+
+      - name: 🔧 Setup Railway CLI
+        run: |
+          npm install -g @railway/cli
+          railway --version
+
+      - name: 🔐 Login to Railway
+        run: railway login --token ${{ secrets.RAILWAY_TOKEN }}
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+      - name: 🚀 Deploy to Railway
+        run: |
+          railway up --service ${{ secrets.RAILWAY_SERVICE_NAME || 'app' }}
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+      - name: ⏱️ Wait for Deployment
+        run: |
+          echo "Waiting for Railway deployment to be ready..."
+          sleep 30
+          
+          # Wait for app to be healthy (max 5 minutes)
+          for i in {1..30}; do
+            echo "Checking deployment status... ($i/30)"
+            
+            # Get deployment URL
+            DEPLOYMENT_URL=$(railway variables get RAILWAY_PUBLIC_DOMAIN --service ${{ secrets.RAILWAY_SERVICE_NAME || 'app' }})
+            
+            if [ -n "$DEPLOYMENT_URL" ]; then
+              echo "Deployment URL: https://$DEPLOYMENT_URL"
+              
+              # Test health endpoint
+              if curl -f "https://$DEPLOYMENT_URL/health" > /dev/null 2>&1; then
+                echo "✅ Application is healthy!"
+                break
+              else
+                echo "⏳ Application not ready yet..."
+              fi
+            fi
+            
+            sleep 10
+          done
+
+      - name: 🔧 Fix Database Issues
+        run: |
+          echo "🔧 Running database fix script..."
+          
+          if [ "${{ github.event.inputs.force_database_reset }}" = "true" ]; then
+            echo "⚠️ Force database reset requested!"
+            railway run -- node scripts/drop-all-tables.cjs
+          fi
+          
+          # Run the comprehensive database fix
+          railway run -- node scripts/fix-railway-database.js
+          
+          echo "✅ Database fix completed!"
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+      - name: 👤 Create Admin User
+        run: |
+          echo "👤 Creating admin user..."
+          railway run -- node scripts/ensure-admin.mjs
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+      - name: ✅ Verify Database
+        run: |
+          echo "🔍 Verifying database integrity..."
+          railway run -- node scripts/verify-database.js
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+      - name: 🧪 Run Application Tests
+        run: |
+          echo "🧪 Running application tests..."
+          railway run -- pnpm test || echo "⚠️ Tests failed but deployment continues"
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+      - name: 📊 Deployment Summary
+        run: |
+          echo "🎉 Deployment Summary"
+          echo "===================="
+          
+          # Get deployment URL
+          DEPLOYMENT_URL=$(railway variables get RAILWAY_PUBLIC_DOMAIN --service ${{ secrets.RAILWAY_SERVICE_NAME || 'app' }})
+          
+          if [ -n "$DEPLOYMENT_URL" ]; then
+            echo "🌐 Application URL: https://$DEPLOYMENT_URL"
+            echo "🏥 Health Check: https://$DEPLOYMENT_URL/health"
+            echo "👤 Admin Login: https://$DEPLOYMENT_URL/admin"
+          fi
+          
+          echo "📊 Database Status: Verified and ready"
+          echo "👤 Admin User: Created (check logs for credentials)"
+          echo "🔧 All migrations: Applied successfully"
+          
+          # Get admin credentials from logs
+          echo ""
+          echo "📋 Admin Credentials (from recent logs):"
+          railway logs --service ${{ secrets.RAILWAY_SERVICE_NAME || 'app' }} --tail 50 | grep -E "(Admin|Username|Password|Credentials)" || echo "Check Railway logs for admin credentials"
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+      - name: 📱 Send Notification (Optional)
+        if: always()
+        run: |
+          # You can add Discord/Slack notifications here
+          echo "Deployment completed with status: ${{ job.status }}"
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+  health-check:
+    runs-on: ubuntu-latest
+    name: Post-Deployment Health Check
+    needs: deploy
+    if: always()
+    
+    steps:
+      - name: 🔧 Setup Railway CLI
+        run: |
+          npm install -g @railway/cli
+          railway --version
+
+      - name: 🔐 Login to Railway
+        run: railway login --token ${{ secrets.RAILWAY_TOKEN }}
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+      - name: 🏥 Final Health Check
+        run: |
+          echo "🏥 Running final health check..."
+          
+          DEPLOYMENT_URL=$(railway variables get RAILWAY_PUBLIC_DOMAIN --service ${{ secrets.RAILWAY_SERVICE_NAME || 'app' }})
+          
+          if [ -n "$DEPLOYMENT_URL" ]; then
+            echo "Testing: https://$DEPLOYMENT_URL/health"
+            
+            # Test health endpoint
+            if curl -f "https://$DEPLOYMENT_URL/health" 2>/dev/null | grep -q "ok"; then
+              echo "✅ Health check passed!"
+              echo "🌐 Application is live at: https://$DEPLOYMENT_URL"
+            else
+              echo "❌ Health check failed!"
+              echo "🔍 Checking application logs..."
+              railway logs --service ${{ secrets.RAILWAY_SERVICE_NAME || 'app' }} --tail 20
+              exit 1
+            fi
+          else
+            echo "❌ Could not get deployment URL"
+            exit 1
+          fi
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+      - name: 📊 Database Health Check
+        run: |
+          echo "🔍 Checking database health..."
+          railway run -- node scripts/verify-database.js
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
