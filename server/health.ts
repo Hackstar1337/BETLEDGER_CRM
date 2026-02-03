@@ -36,12 +36,14 @@ export async function healthCheck(req: Request, res: Response) {
       databaseStatus.error = error.message;
     }
 
-    const status = databaseStatus.connected && databaseStatus.tables >= 4 ? "ok" : "degraded";
+    const status = databaseStatus.connected ? "ok" : "degraded";
     
-    // Trigger post-deployment setup on first successful health check
-    if (status === "ok" && !postDeploymentTriggered && process.env.NODE_ENV === "production") {
+    // Trigger post-deployment setup on first successful health check in production
+    if (status === "ok" && !postDeploymentTriggered && (process.env.NODE_ENV === "production" || process.env.RAILWAY_ENVIRONMENT === "production")) {
       postDeploymentTriggered = true;
       console.log('🚀 First successful health check - triggering post-deployment setup');
+      console.log('📊 Database status:', databaseStatus);
+      console.log('🌍 Environment:', process.env.NODE_ENV, process.env.RAILWAY_ENVIRONMENT);
       
       // Run post-deployment setup asynchronously after a short delay
       setTimeout(async () => {
@@ -62,8 +64,9 @@ export async function healthCheck(req: Request, res: Response) {
         } catch (error: any) {
           console.error('❌ Post-deployment setup failed:', error.message);
           console.log('🔄 Application continues running, manual setup may be needed');
+          console.log('🔧 Run manually: railway run -- node scripts/post-deployment-setup.js');
         }
-      }, 10000); // Wait 10 seconds after health check
+      }, 5000); // Wait 5 seconds after health check
     }
     
     res.status(200).json({

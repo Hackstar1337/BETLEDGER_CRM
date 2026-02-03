@@ -11,6 +11,7 @@ import { panelDailyBalancesRouter } from "./routers/panelDailyBalances";
 import { topUpRouter } from "./routers/topUp";
 import { ledgerRouter } from "./routers/ledger";
 import { getWebSocketManager } from "./_core/websocket";
+import { triggerPostDeployment, getPostDeploymentStatus } from "./_core/postDeployment";
 
 // Admin-only procedure
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -29,6 +30,16 @@ export const appRouter = router({
   panelDailyBalances: panelDailyBalancesRouter,
   topUp: topUpRouter,
   ledger: ledgerRouter,
+
+  // Post-deployment management
+  postDeployment: router({
+    trigger: publicProcedure.mutation(async ({ ctx }) => {
+      return await triggerPostDeployment(ctx.req, ctx.res);
+    }),
+    status: publicProcedure.query(async ({ ctx }) => {
+      return await getPostDeploymentStatus(ctx.req, ctx.res);
+    }),
+  }),
 
   // Standalone authentication (replaces OAuth)
   standaloneAuth: router({
