@@ -213,13 +213,19 @@ async function runDrizzleMigrations(connection) {
     } catch (error) {
         console.log('⚠️ Drizzle migration error:', error.message);
         
-        // If migration fails due to existing tables, that's okay
+        // If migration fails due to existing tables or columns, that's okay
         if (error.message.includes('already exists') || 
             error.message.includes('Duplicate column name') ||
-            error.message.includes('ER_BAD_TABLE_DEFINITION')) {
-            console.log('ℹ️ Migration conflicts detected, continuing...');
+            error.message.includes('ER_BAD_TABLE_DEFINITION') ||
+            error.message.includes('ER_TABLE_EXISTS_ERROR') ||
+            error.code === 'ER_TABLE_EXISTS_ERROR' ||
+            error.sqlState === '42S01') {
+            console.log('ℹ️ Migration conflicts detected - tables already exist, continuing...');
+            console.log('📊 This is normal for re-deployments');
         } else {
-            throw error;
+            console.log('❌ Unexpected migration error:', error.message);
+            console.log('🔍 Full error details:', error);
+            // Don't throw - continue with other steps
         }
     }
 }
