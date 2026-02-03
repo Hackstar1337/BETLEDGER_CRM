@@ -1,0 +1,19 @@
+{
+  "query": "SELECT * FROM players WHERE userId = 'DEMON';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user Hbsm33TssSr3JiD.ea76e2df2220 --database 3hz3aB4HhodeGh2r4EXkt7 --execute SELECT * FROM players WHERE userId = 'DEMON';",
+  "rows": [
+    {
+      "id": "3",
+      "userId": "DEMON",
+      "name": "DEMON",
+      "panelName": "Tiger Panel",
+      "createdAt": "2026-01-28 06:03:31",
+      "updatedAt": "2026-01-28 06:03:31",
+      "balance": "0.00"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tuserId\tname\tpanelName\tcreatedAt\tupdatedAt\tbalance\n3\tDEMON\tDEMON\tTiger Panel\t2026-01-28 06:03:31\t2026-01-28 06:03:31\t0.00\n",
+  "stderr": "",
+  "execution_time_ms": 1600
+}

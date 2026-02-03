@@ -1,0 +1,1 @@
+ALTER TABLE `bankAccounts` ADD `accountType` enum('Deposit','Withdrawal') DEFAULT 'Deposit' NOT NULL;

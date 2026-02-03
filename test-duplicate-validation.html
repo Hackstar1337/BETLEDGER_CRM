@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Duplicate Account Holder</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        #results {
+            white-space: pre-wrap;
+            font-family: monospace;
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test Duplicate Account Holder Name Validation</h1>
+    
+    <div class="test-section">
+        <h2>Test Instructions</h2>
+        <p>1. Open the Casino Panel application in another tab</p>
+        <p>2. Navigate to Bank Accounts page</p>
+        <p>3. Click "Add Account" button</p>
+        <p>4. Try to create two accounts with the same Account Holder Name</p>
+        <p>5. The second attempt should show an error message</p>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Data</h2>
+        <p><strong>First Account:</strong></p>
+        <ul>
+            <li>Account Holder Name: Test Duplicate User</li>
+            <li>Account Number: TEST001</li>
+            <li>Bank Name: Test Bank</li>
+            <li>Account Type: Deposit</li>
+            <li>Opening Balance: 1000</li>
+        </ul>
+        
+        <p><strong>Second Account (should fail):</strong></p>
+        <ul>
+            <li>Account Holder Name: Test Duplicate User (same as above)</li>
+            <li>Account Number: TEST002</li>
+            <li>Bank Name: Another Bank</li>
+            <li>Account Type: Deposit</li>
+            <li>Opening Balance: 2000</li>
+        </ul>
+    </div>
+
+    <div class="test-section">
+        <h2>Expected Results</h2>
+        <div class="success">
+            <p>✅ First account should be created successfully</p>
+            <p>✅ Second account should show error: "Account holder name 'Test Duplicate User' already exists. Please use a different name."</p>
+        </div>
+    </div>
+
+    <button onclick="openCasinoPanel()">Open Casino Panel</button>
+    <button onclick="showTestResults()">Show Test Results Guide</button>
+
+    <div id="results"></div>
+
+    <script>
+        function openCasinoPanel() {
+            window.open('http://localhost:3004', '_blank');
+        }
+
+        function showTestResults() {
+            const results = document.getElementById('results');
+            results.textContent = `TEST CHECKLIST:
+
+1. [ ] Open Casino Panel application
+2. [ ] Navigate to Bank Accounts page
+3. [ ] Click "Add Account" button
+4. [ ] Fill form with:
+   - Account Holder Name: Test Duplicate User
+   - Account Number: TEST001
+   - Bank Name: Test Bank
+   - Account Type: Deposit
+   - Opening Balance: 1000
+5. [ ] Click "Add Account"
+6. [ ] Verify first account is created successfully
+7. [ ] Click "Add Account" again
+8. [ ] Fill form with:
+   - Account Holder Name: Test Duplicate User (same!)
+   - Account Number: TEST002
+   - Bank Name: Another Bank
+   - Account Type: Deposit
+   - Opening Balance: 2000
+9. [ ] Click "Add Account"
+10. [ ] Verify error message appears: "Account holder name 'Test Duplicate User' already exists. Please use a different name."
+11. [ ] Verify second account is NOT created
+
+If all steps pass, the duplicate validation is working correctly!`;
+        }
+    </script>
+</body>
+</html>

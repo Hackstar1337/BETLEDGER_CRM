@@ -1,0 +1,1 @@
+ALTER TABLE `panels` ADD `pointsBalance` int DEFAULT 0 NOT NULL;

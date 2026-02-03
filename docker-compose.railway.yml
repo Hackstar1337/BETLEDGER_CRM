@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  app:
+    type: web
+    build:
+      builder: NIXPACKS
+      buildCommand: pnpm install && pnpm run build
+    run:
+      command: pnpm run start:railway
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DATABASE_URL=mysql://khiladi:khiladi123@database:3306/khiladi247
+    depends_on:
+      - database
+
+  database:
+    type: db
+    image: mysql:8
+    environment:
+      - MYSQL_DATABASE=khiladi247
+      - MYSQL_USER=khiladi
+      - MYSQL_PASSWORD=khiladi123
+      - MYSQL_ROOT_PASSWORD=root123
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+volumes:
+  mysql_data:

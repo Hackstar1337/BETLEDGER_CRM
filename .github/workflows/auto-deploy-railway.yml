@@ -1,0 +1,92 @@
+name: Deploy to Railway
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Login to Railway
+        run: railway login --token ${{ secrets.RAILWAY_TOKEN }}
+
+      - name: Create/Select Project
+        run: |
+          railway project init khiladi-management-panel || railway project select khiladi-management-panel
+
+      - name: Create MySQL Database (if not exists)
+        run: |
+          # Check if database service already exists
+          if ! railway service list | grep -q "khiladi-db"; then
+            echo "Creating MySQL database..."
+            railway add mysql --name khiladi-db
+            echo "Waiting for database to be ready..."
+            sleep 60
+          else
+            echo "Database already exists"
+          fi
+
+      - name: Get Database URL and Set Variables
+        run: |
+          # Get database URL
+          DB_URL=$(railway variables get DATABASE_URL --service khiladi-db)
+          
+          # Set environment variables for main app
+          railway variables set DATABASE_URL="$DB_URL"
+          railway variables set NODE_ENV=production
+          railway variables set PORT=3000
+          
+          echo "Environment variables set successfully"
+
+      - name: Deploy Application
+        run: railway up
+
+      - name: Wait for Deployment
+        run: |
+          echo "Waiting for deployment to be ready..."
+          sleep 30
+          
+          # Get the deployment URL
+          APP_URL=$(railway domain)
+          echo "Application deployed at: $APP_URL"
+          
+          # Check if application is healthy
+          for i in {1..10}; do
+            if curl -f "$APP_URL/health" > /dev/null 2>&1; then
+              echo "✅ Application is healthy!"
+              break
+            else
+              echo "Waiting for application to be healthy... (attempt $i/10)"
+              sleep 10
+            fi
+          done
+
+      - name: Setup Database (if needed)
+        run: |
+          # Get the deployment URL
+          APP_URL=$(railway domain)
+          
+          # Trigger database setup via API (optional)
+          echo "Database setup can be triggered manually if needed"
+          echo "Visit: $APP_URL"
+          echo "Run setup command: railway run 'pnpm run setup-prod-db'"
+
+      - name: Output Deployment Info
+        run: |
+          echo "🎉 Deployment Complete!"
+          echo "📊 Database: MySQL (khiladi-db)"
+          echo "🌐 Application URL: $(railway domain)"
+          echo "🔧 To run database setup: railway run 'pnpm run setup-prod-db'"

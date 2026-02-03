@@ -1,0 +1,1 @@
+ALTER TABLE `players` ADD `balance` decimal(15,2) DEFAULT '0.00' NOT NULL;

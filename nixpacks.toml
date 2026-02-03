@@ -1,0 +1,16 @@
+[phases.setup]
+nixPkgs = ["nodejs_20", "mysql-client"]
+
+[phases.install]
+cmds = [
+  "npm i -g pnpm@10.15.1",
+  "PNPM_BIN=\"$(npm config get prefix)/bin/pnpm\" && \"$PNPM_BIN\" install --no-frozen-lockfile"
+]
+
+[phases.build]
+cmds = [
+  "PNPM_BIN=\"$(npm config get prefix)/bin/pnpm\" && \"$PNPM_BIN\" run build"
+]
+
+[start]
+cmd = "npm run start:railway"

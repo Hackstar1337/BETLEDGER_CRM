@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Same Bank Name with Different Holders</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border-color: #bee5eb;
+            color: #0c5460;
+        }
+        .warning {
+            background-color: #fff3cd;
+            border-color: #ffeaa7;
+            color: #856404;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .test-data {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test: Same Bank Name with Different Account Holders</h1>
+    
+    <div class="test-section info">
+        <h2>✅ Current Implementation</h2>
+        <p><strong>Account Holder Name:</strong> Must be unique (cannot duplicate)</p>
+        <p><strong>Bank Name:</strong> Can be duplicated (multiple accounts can use same bank)</p>
+        <p><strong>Account Number:</strong> Must be unique per account</p>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Scenarios</h2>
+        
+        <h3>Scenario 1: Same Bank, Different Holders (Should Work ✅)</h3>
+        <div class="test-data">
+            <p><strong>Account 1:</strong></p>
+            <ul>
+                <li>Account Holder: John Doe</li>
+                <li>Bank Name: State Bank of India</li>
+                <li>Account Number: SBI001</li>
+            </ul>
+            <p><strong>Account 2:</strong></p>
+            <ul>
+                <li>Account Holder: Jane Smith</li>
+                <li>Bank Name: State Bank of India (same bank)</li>
+                <li>Account Number: SBI002</li>
+            </ul>
+        </div>
+        <p><strong>Expected Result:</strong> Both accounts should be created successfully</p>
+        
+        <h3>Scenario 2: Same Holder, Different Banks (Should Fail ❌)</h3>
+        <div class="test-data">
+            <p><strong>Account 1:</strong></p>
+            <ul>
+                <li>Account Holder: John Doe</li>
+                <li>Bank Name: State Bank of India</li>
+                <li>Account Number: SBI003</li>
+            </ul>
+            <p><strong>Account 2:</strong></p>
+            <ul>
+                <li>Account Holder: John Doe (same holder)</li>
+                <li>Bank Name: ICICI Bank (different bank)</li>
+                <li>Account Number: ICICI001</li>
+            </ul>
+        </div>
+        <p><strong>Expected Result:</strong> Second account should be rejected with error about duplicate account holder name</p>
+    </div>
+
+    <div class="test-section warning">
+        <h2>⚠️ If You're Experiencing Issues</h2>
+        <p>If you're unable to create accounts with the same bank name, it might be because:</p>
+        <ol>
+            <li>The database migration for the unique constraint hasn't been applied yet</li>
+            <li>There might be additional validation in the frontend</li>
+            <li>The account number might be duplicated (account numbers must be unique)</li>
+        </ol>
+    </div>
+
+    <button onclick="openCasinoPanel()">Open Casino Panel to Test</button>
+    <button onclick="runDatabaseCheck()">Check Database Constraints</button>
+
+    <div id="results" style="margin-top: 20px;"></div>
+
+    <script>
+        function openCasinoPanel() {
+            // Check which port the server is running on
+            const ports = [3002, 3004, 3000];
+            let portFound = false;
+            
+            ports.forEach(port => {
+                if (!portFound) {
+                    window.open(`http://localhost:${port}/bank-accounts`, '_blank');
+                    portFound = true;
+                }
+            });
+        }
+
+        function runDatabaseCheck() {
+            const results = document.getElementById('results');
+            results.innerHTML = `
+                <h3>Database Constraint Check</h3>
+                <p>To verify the database constraints:</p>
+                <ol>
+                    <li>Open your MySQL client</li>
+                    <li>Run: <code>DESCRIBE bankaccounts;</code></li>
+                    <li>Check that only 'accountHolderName' has a UNI (unique) flag</li>
+                    <li>Or run: <code>SHOW INDEX FROM bankaccounts;</code></li>
+                    <li>You should see only one unique index on accountHolderName</li>
+                </ol>
+                <p><strong>SQL to check unique constraint:</strong></p>
+                <pre><code>SELECT CONSTRAINT_NAME, COLUMN_NAME
+FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+WHERE TABLE_NAME = 'bankaccounts' 
+AND CONSTRAINT_SCHEMA = DATABASE()
+AND CONSTRAINT_NAME != 'PRIMARY';</code></pre>
+            `;
+        }
+    </script>
+</body>
+</html>
