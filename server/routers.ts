@@ -12,6 +12,7 @@ import { topUpRouter } from "./routers/topUp";
 import { ledgerRouter } from "./routers/ledger";
 import { getWebSocketManager } from "./_core/websocket";
 import { triggerPostDeployment, getPostDeploymentStatus } from "./_core/postDeployment";
+import { getAllPanelsOptimized, getAllBankAccountsOptimized } from "./db-optimized";
 
 // Admin-only procedure
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -186,7 +187,7 @@ export const appRouter = router({
           .optional()
       )
       .query(async ({ input }) => {
-        return await db.getAllPanels(
+        return await getAllPanelsOptimized(
           input?.timePeriod || "today",
           input?.timezone || "GMT+5:30"
         );
@@ -294,7 +295,7 @@ export const appRouter = router({
           .optional()
       )
       .query(async ({ input }) => {
-        return await db.getAllBankAccounts(
+        return await getAllBankAccountsOptimized(
           input?.timePeriod || "today",
           input?.timezone || "GMT+5:30"
         );
@@ -703,8 +704,8 @@ export const appRouter = router({
   // Dashboard statistics
   dashboard: router({
     overview: protectedProcedure.query(async () => {
-      const panels = await db.getAllPanels();
-      const bankAccounts = await db.getAllBankAccounts();
+      const panels = await getAllPanelsOptimized("today", "GMT+5:30");
+      const bankAccounts = await getAllBankAccountsOptimized("today", "GMT+5:30");
       const gameplayTransactions = await db.getAllGameplayTransactions();
 
       // Total panel points balance
