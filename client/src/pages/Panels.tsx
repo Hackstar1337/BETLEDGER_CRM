@@ -130,13 +130,19 @@ export default function Panels() {
     isLoading,
     refetch,
   } = trpc.panels.list.useQuery({ timePeriod, timezone });
+  
+  const utils = trpc.useUtils();
+  
   const createPanel = trpc.panels.create.useMutation({
     onSuccess: () => {
       toast.success("Panel created successfully");
       setIsCreateDialogOpen(false);
       setNewPanelName("");
       setNewPanelPoints("");
-      refetch();
+      
+      // Invalidate cache to refresh panels list
+      utils.panels.list.invalidate();
+      utils.dashboard.overview.invalidate();
     },
     onError: error => {
       toast.error(error.message || "Failed to create panel");
@@ -148,7 +154,10 @@ export default function Panels() {
       toast.success("Panels deleted successfully");
       setSelectedPanels([]);
       setDeleteDialogOpen(false);
-      refetch();
+      
+      // Invalidate cache to refresh panels list
+      utils.panels.list.invalidate();
+      utils.dashboard.overview.invalidate();
     },
     onError: error => {
       toast.error(error.message || "Failed to delete panels");
@@ -160,7 +169,10 @@ export default function Panels() {
       toast.success("Panel topped-up successfully");
       setAddPointsDialog(false);
       setAddPointsForm({ panelId: "", pointsToAdd: "" });
-      refetch();
+      
+      // Invalidate cache to refresh panels list
+      utils.panels.list.invalidate();
+      utils.dashboard.overview.invalidate();
     },
     onError: error => {
       toast.error(error.message || "Failed to top-up panel");
