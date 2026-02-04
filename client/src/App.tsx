@@ -25,9 +25,13 @@ import TopUpMonitor from "./pages/TopUpMonitor";
 import { RealtimeDashboard } from "./components/RealtimeDashboard";
 import DashboardLayout from "@/components/DashboardLayout";
 import { trpc } from "./lib/trpc";
+import { useDataPrefetch } from "./hooks/useDataPrefetch";
 
 function Router() {
   const { data: user, isLoading } = trpc.standaloneAuth.me.useQuery();
+  
+  // Prefetch data for instant section switching
+  useDataPrefetch();
 
   // Show loading state while checking auth
   if (isLoading) {
